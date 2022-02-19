@@ -7,10 +7,15 @@ QRDistance = 107.5
 
 def setPoint(x,y, img, imgWidth):
     cv2.circle(img, (np.int32(imgWidth/2 + mmToPixel(x, imgWidth)),np.int32(imgWidth/2 - mmToPixel(y, imgWidth))), 15, (0,0,255),cv2.FILLED)
+
+def getPoint(x,y, imgWidth):
+    return pixelTomm(x-imgWidth/2, imgWidth) / 10, pixelTomm(imgWidth/2-y,imgWidth) / 10
+
 def mmToPixel(pos, width):
     return width / QRDistance * pos
+
 def pixelTomm(pos, width): 
-    return QRDistance/width * pos
+    return QRDistance/width * pos[0]
 
 
 class warpImage():
@@ -33,6 +38,7 @@ if __name__ == '__main__':
     corners = test.getCorners(path)
     
     width = corners[2,0] - corners[0,0]
+
     # # height = corners[1,1] - corners[0,1]
 
     warped = warpImage(test.img, width)
