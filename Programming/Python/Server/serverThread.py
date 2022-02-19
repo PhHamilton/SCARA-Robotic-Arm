@@ -19,6 +19,7 @@ class serverClass():
         self.startServer = True
         self.firstEntry = True
         self.image = None
+        self.newImage = False
     
     def run(self): 
         if(self.firstEntry is True): 
@@ -39,7 +40,12 @@ class serverClass():
                 # Rewind the stream, open it as an image with PIL and do some
                 # processing on it
                 image_stream.seek(0)
-                image = Image.open(image_stream)
+                self.image = image_stream
+
+                self.newImage = True
+
+
+                # self.image = Image.open(image_stream)
                 # self.image.show()
 
                 # self.cv2Image = np.array(image) 
@@ -51,24 +57,30 @@ class serverClass():
 
 
                 # print('Image is %dx%d' % self.image.size)
-                image.verify()
-                self.updateImage(image)
+                # self.image.verify()
+
                 # print('Image is verified')
         
             self.connection.close()
             self.server_socket.close()
         except: 
             print("Thread creation failed")
-
-    def updateImage(self, img): 
-        self.image = img
     
+    def getImage(self): 
+        self.newImage = False
+        return self.image
 
 def updateCanvas(): 
     while(1):
         try:
-            print(server.image.size)
-            server.image.show()
+            if(server.newImage == True):
+                img = server.getImage()
+                image = Image.open(img)
+                testImage = ImageTk.PhotoImage(image = image.resize((600,600)))
+                canvas.create_image(0,0,anchor=tk.NW,image=testImage)
+                # canvas.create_image(img = ImageTk.PhotoImage(Image.open(img)))
+                # print(img)
+            
             # img = ImageTk.PhotoImage(server.image)
             # canvas.create_image(image = img)
         except:
@@ -85,8 +97,8 @@ if __name__ == '__main__':
     thread2 = threading.Thread(target = updateCanvas)
 
     root = tk.Tk()
-    root.geometry("720x480")
-    canvas = tk.Canvas(root, width = 720, height = 480)
+    root.geometry("800x800")
+    canvas = tk.Canvas(root, width = 648, height = 800)
     canvas.grid(row = 0, column = 0, sticky = "NESW")
 
 
