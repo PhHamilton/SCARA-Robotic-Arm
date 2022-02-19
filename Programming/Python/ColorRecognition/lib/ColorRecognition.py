@@ -3,8 +3,11 @@ import numpy as np
 import sys, os
 
 class detectColor():
-    def __init__(self, image): 
-        self.img = cv2.imread(image)
+    def __init__(self, image, path = None):
+        if(path != None): 
+            self.img = cv2.imread(image)
+        else: 
+            self.img = image
         self.FilteredImage = None
         self.cannyImage = None
 
@@ -58,10 +61,12 @@ class detectColor():
         return xList, yList
 
 
-    def drawCross(self, img, x, y, cross_color, line_length): 
+    def drawCross(self, img, x, y, cross_color, line_length, text = None): 
         for i in range(len(x)):
             cv2.line(img, (x[i]-line_length, y[i]), (x[i]+line_length, y[i]), cross_color, 5)
             cv2.line(img, (x[i], y[i]-line_length), (x[i], y[i]+line_length), cross_color, 5)
+            if(text != None): 
+                cv2.putText(img, text, (x[i] + 20, y[i]+80), cv2.FONT_HERSHEY_COMPLEX, 2, (255,255,255), 2)
         # for c in filtered_contours:
         #     M = cv2.moments(c)
         #     x = int(M['m10']/M['m00'])
