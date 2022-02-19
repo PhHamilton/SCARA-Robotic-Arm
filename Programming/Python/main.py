@@ -1,5 +1,5 @@
 from readQRCode.readQR import QRCalibration
-from readQRCode.warpImage import warpImage, setPoint
+from readQRCode.warpImage import warpImage, setPoint, getPoint, QRDistance
 
 from ColorRecognition.lib.ColorRecognition import detectColor
 import cv2
@@ -42,7 +42,10 @@ def findColor(obj, img, color):
     obj.setKernel(10)
     obj.findColor()
     x,y = obj.getCoordinates()
-    obj.drawCross(img, x, y, crosshairColor, 20)
+    inMM = getPoint(x,y, width)
+    print(inMM)
+    txt = "({:.1f}, {:.1f})".format(inMM[0], inMM[1])
+    obj.drawCross(img, x, y, crosshairColor, 20, txt)
 
 if __name__ == "__main__": 
     path = r'/Users/Philip/Documents/Programming/SCARA-Robotic-Arm/Programming/Python/readQRCode/img/testWColors.jpg'
@@ -50,24 +53,14 @@ if __name__ == "__main__":
     corners = test.getCorners(path)
     
     width = corners[2,0] - corners[0,0]
-    # # height = corners[1,1] - corners[0,1]
 
     warped = warpImage(test.img, width)
     warped.warpImage(corners)
 
-    # setPoint(10, -40, warped.warpedImage, width)
-    colorDetection = detectColor(path)
+    colorDetection = detectColor(warped.warpedImage)
     findColor(colorDetection, warped.warpedImage, "Blue")
 
-    # colorDetection.setName("Blue")
-    # colorDetection.setLowerBound(90,50,50)
-    # colorDetection.setUpperBound(130,255,255)
-    # colorDetection.setKernel(10)
-    # colorDetection.findColor()
-    # x,y = colorDetection.getCoordinates()
-    # colorDetection.drawCross(warped.img,x, y, (255,255,255), 20)
     warped.showImage()
-    cv2.imshow(colorDetection.name, warped.warpedImage)
-    cv2.waitKey(0)
+    
     # test.showImage()
     # warped.showImage()
