@@ -42,10 +42,12 @@ def findColor(obj, img, color):
     obj.setKernel(10)
     obj.findColor()
     x,y = obj.getCoordinates()
-    inMM = getPoint(x,y, width)
-    print(inMM)
-    txt = "({:.1f}, {:.1f})".format(inMM[0], inMM[1])
-    obj.drawCross(img, x, y, crosshairColor, 20, txt)
+    # inMM = getPoint(x,y, width)
+    # print(inMM)
+    # txt = "({:.1f}, {:.1f})".format(inMM[0], inMM[1])
+    # obj.drawCross(img, x, y, crosshairColor, 20, txt)
+
+    return x, y
 
 if __name__ == "__main__": 
     path = r'/Users/Philip/Documents/Programming/SCARA-Robotic-Arm/Programming/Python/readQRCode/img/testWColors.jpg'
@@ -57,10 +59,17 @@ if __name__ == "__main__":
     warped = warpImage(test.img, width)
     warped.warpImage(corners)
 
-    colorDetection = detectColor(warped.warpedImage)
-    findColor(colorDetection, warped.warpedImage, "Blue")
 
-    warped.showImage()
-    
-    # test.showImage()
-    # warped.showImage()
+# Find the colors in the fixed frame to determine their position
+    colorDetection = detectColor(warped.warpedImage)
+    x, y = findColor(colorDetection, warped.warpedImage, "Blue")
+
+    xMM, yMM = getPoint(x, y, width)
+    txt = "({:.1f}, {:.1f})".format(xMM, yMM)
+
+    colorDetection2 = detectColor(test.img)
+    x2,y2 = findColor(colorDetection2, test.img, "Blue")
+    colorDetection2.drawCross(test.img, x2, y2, (255,255,255), 20, txt)
+    test.showImage()
+
+
