@@ -70,7 +70,7 @@ class serverClass():
         self.newImage = False
         return self.image
 
-def updateCanvas(): 
+def updateCanvas(canvas): 
     while(1):
         try:
             if(server.newImage == True):
