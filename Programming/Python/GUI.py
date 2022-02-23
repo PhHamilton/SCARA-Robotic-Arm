@@ -1,6 +1,9 @@
 import tkinter as tk 
 from tkinter import ANCHOR, ttk
-
+from ConnectSSH.connectToSSH import connectToSSH
+from Server.serverThread import serverClass, updateCanvas
+import threading, time
+from PIL import Image, ImageTk
 # Global defines
 padX = 5
 padY = 5
@@ -45,6 +48,12 @@ class RaspberryPIConnection():
         self.updateIPEntry()
         self.button = self.addButton(IPFrame, 2, 0, "Connect..")
 
+
+
+        self.ssh = connectToSSH(self.IP, self.hostVal.get(), self.passwordVal.get())
+        self.server = serverClass('192.168.1.143')
+        self.serverThread = threading.Thread(target = self.server.run)
+    
     def updateHostNPWD(self, host, PWD): 
         self.host = host
         self.password = PWD
@@ -62,12 +71,17 @@ class RaspberryPIConnection():
 
     def clicked(self): 
         if(self.connected is False):
+            terminal.update("Conneting to {}".format(self.IP))
+            self.ssh.connect()
+            self.serverThread.start()
+            plotCanvas
             self.button.configure(text = "Disconnect..")        
             self.connected = True
         else:
+            terminal.update("Disconnecting..")
             self.button.configure(text = "Connect..")
             self.connected = False
-        terminal.update("Conneting to..")
+        
         self.updateIPEntry()
 
     def addHostNamePWD(self, root, ROW, COL): 
@@ -240,16 +254,38 @@ class plotScreen():
                             sticky = "NESW")
 
         
+        self.canvas = tk.Canvas(plotScreenFrame,
+                           bg = "grey",
+                           width = 550,
+                           height = 550)
 
-        canvas = tk.Canvas(plotScreenFrame,
-                           width = 450,
-                           height = 450)
-
-        canvas.grid(row = ROW, 
+        self.canvas.grid(row = ROW, 
                     column = COL, 
                     padx = padX, 
                     pady = padY, 
                     sticky = "NESW")
+
+        
+
+    def updateCanvas(self, server): 
+        while(1):
+            try:
+                if(server.newImage == True):
+                    img = server.getImage()
+                    image = Image.open(img)
+                    testImage = ImageTk.PhotoImage(image = image.resize((550,550)))
+                    self.canvas.create_image(0,0,anchor=tk.NW,image=testImage)
+                    # canvas.create_image(img = ImageTk.PhotoImage(Image.open(img)))
+                        # print(img)
+                    
+                    # img = ImageTk.PhotoImage(server.image)
+                    # canvas.create_image(image = img)
+            except:
+                print("No image available")
+            time.sleep(1)
+    def startServer(self): 
+        self.canvasThread = threading.Thread(target = updateCanvas(raspiConnection.server))
+        self.canvasThread.start()
 
 class terminalScreen():
     def __init__(self, master, ROW = 0, COL = 0):
@@ -266,8 +302,15 @@ class terminalScreen():
                             padx = padX, 
                             pady = padY, 
                             sticky = "NESW")
+        self.consoleList = []
+
+
     def update(self, txt): 
-        self.textField.insert(tk.INSERT, txt)
+        self.consoleList.insert(0, txt)
+        listLen = len(self.consoleList)
+        self.textField.delete("1.0", tk.END)
+        for i in range(listLen):
+            self.textField.insert(tk.INSERT, self.consoleList[i] + '\n')
 
 
 if __name__ == "__main__": 
@@ -276,9 +319,14 @@ if __name__ == "__main__":
     # Console added first to be able to access it from the other classes
     terminal = terminalScreen(root,4,1)
 
-    RaspberryPIConnection(root)
+    raspiConnection = RaspberryPIConnection(root)
     HSVsettings(root, 1)
     plotSettings(root, 2)
-    plotScreen(root, 0, 1)
+    plotCanvas = plotScreen(root, 0, 1)
     
     root.mainloop()
+
+    
+    
+    
+    
