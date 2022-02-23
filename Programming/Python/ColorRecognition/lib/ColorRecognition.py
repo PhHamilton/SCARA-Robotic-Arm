@@ -16,7 +16,7 @@ class detectColor():
         self.lowerBoundSet = False
         self.upperBoundSet = False
 
-        self.lowerBound = None
+        self.lowerBound = None 
         self.upperBound = None
         self.msk = None
         self.kernel = None
@@ -112,6 +112,10 @@ class detectColor():
     
     def saveImage(self): 
         cv2.imwrite("/Users/Philip/Documents/Programming/SCARA-Robotic-Arm/Programming/Python/Color Recognition/images/FilteredImage.png", self.FilteredImage)
+
+    def convertToPIL(self): 
+        pass
+
         
 
 
