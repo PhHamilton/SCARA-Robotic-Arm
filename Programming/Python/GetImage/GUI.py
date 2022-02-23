@@ -7,7 +7,7 @@ from getImage import getImageClass
 WIDTH = 640
 HEIGHT = 480
 
-class netWorkGUI():
+class connectSSH():
     def __init__(self, parent, IP = None, PWD = None): 
         self.parent = parent
         if(IP == None): 
