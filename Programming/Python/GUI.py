@@ -4,12 +4,12 @@ from ConnectSSH.connectToSSH import connectToSSH
 from Server.serverThread import serverClass
 import threading, time
 from PIL import Image, ImageTk
-import io
-import socket
-import struct
+
 # Global defines
 padX = 5
 padY = 5
+canvasWidth = 550
+canvasHeight = 550
 
 class RaspberryPIConnection():
     def __init__(self, master, ROW = 0, COL = 0):
@@ -75,11 +75,19 @@ class RaspberryPIConnection():
     def clicked(self): 
         if(self.connected is False):
             terminal.update("Conneting to {}".format(self.IP))
+            self.button.configure(text = "Connecting..")
+            self.button.configure(state = tk.DISABLED)      
+            plotCanvas.canvas.delete("NSC")  
+            plotCanvas.canvas.create_text(550/2, 550/2, text = "Connecting to stream..", font = "Arial")
+            plotCanvas.canvas.update_idletasks()
             self.ssh.connect()
+            # self.button.configure(state = tk.NORMAL)
+            # self.button.configure(text = "Disconnect..")        
+
             self.serverThread.start()
-            time.sleep(5)
+            time.sleep(1)
             plotCanvas.startServer()
-            self.button.configure(text = "Disconnect..")        
+            
             self.connected = True
         else:
             terminal.update("Disconnecting..")
@@ -249,6 +257,8 @@ class plotSettings():
     
 class plotScreen():
     def __init__(self, master, ROW = 0, COL = 0):
+        self.firstImageEntry = True
+
         plotScreenFrame = tk.LabelFrame(master, text = "Video Feed")
         plotScreenFrame.grid(row = ROW, 
                             rowspan = 3,
@@ -259,9 +269,13 @@ class plotScreen():
 
         
         self.canvas = tk.Canvas(plotScreenFrame,
-                           bg = "grey",
-                           width = 550,
-                           height = 550)
+                           bg = "black",
+                           width = canvasWidth,
+                           height = canvasHeight)
+
+        self.canvas.create_text(canvasWidth/2, canvasHeight/2, text = "No stream connected..", font = "Arial", tags = "NSC")
+
+
 
         self.canvas.grid(row = ROW, 
                     column = COL, 
@@ -282,6 +296,11 @@ class plotScreen():
 
                     testImage = ImageTk.PhotoImage(image = image)
                     self.canvas.create_image(0,0,anchor=tk.NW,image=testImage)
+
+                    if(self.firstImageEntry == True):
+                        raspiConnection.button.configure(state = tk.NORMAL)
+                        raspiConnection.button.configure(text = "Disconnect..")
+                        self.firstImageEntry = False
             except:
                 print("No image available")
             time.sleep(1)
