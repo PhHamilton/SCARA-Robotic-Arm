@@ -1,9 +1,12 @@
 import tkinter as tk 
 from tkinter import ANCHOR, ttk
 from ConnectSSH.connectToSSH import connectToSSH
-from Server.serverThread import serverClass, updateCanvas
+from Server.serverThread import serverClass
 import threading, time
 from PIL import Image, ImageTk
+import io
+import socket
+import struct
 # Global defines
 padX = 5
 padY = 5
@@ -74,7 +77,8 @@ class RaspberryPIConnection():
             terminal.update("Conneting to {}".format(self.IP))
             self.ssh.connect()
             self.serverThread.start()
-            plotCanvas
+            time.sleep(5)
+            plotCanvas.startServer()
             self.button.configure(text = "Disconnect..")        
             self.connected = True
         else:
@@ -123,7 +127,7 @@ class RaspberryPIConnection():
 
 class HSVsettings():
     def __init__(self, master, ROW = 0, COL = 0): 
-        HSVSettings = tk.LabelFrame(master, text = "HSV Settings")
+        HSVSettings = tk.LabelFrame(master, text = "HSV Color Settings")
         HSVSettings.grid(row = ROW, 
                      column = COL, 
                      padx = padX, 
@@ -265,6 +269,7 @@ class plotScreen():
                     pady = padY, 
                     sticky = "NESW")
 
+        self.canvasThread = threading.Thread(target = lambda: self.updateCanvas(raspiConnection.server))
         
 
     def updateCanvas(self, server): 
@@ -273,18 +278,14 @@ class plotScreen():
                 if(server.newImage == True):
                     img = server.getImage()
                     image = Image.open(img)
-                    testImage = ImageTk.PhotoImage(image = image.resize((550,550)))
+
+
+                    testImage = ImageTk.PhotoImage(image = image)
                     self.canvas.create_image(0,0,anchor=tk.NW,image=testImage)
-                    # canvas.create_image(img = ImageTk.PhotoImage(Image.open(img)))
-                        # print(img)
-                    
-                    # img = ImageTk.PhotoImage(server.image)
-                    # canvas.create_image(image = img)
             except:
                 print("No image available")
             time.sleep(1)
     def startServer(self): 
-        self.canvasThread = threading.Thread(target = updateCanvas(raspiConnection.server))
         self.canvasThread.start()
 
 class terminalScreen():
