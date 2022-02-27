@@ -1,6 +1,7 @@
 from calendar import c
 import tkinter as tk 
 from tkinter import ANCHOR, ttk
+from warnings import filters
 from ConnectSSH.connectToSSH import connectToSSH
 from Server.serverThread import serverClass
 from ColorRecognition.lib.ColorRecognition import detectColor
@@ -215,7 +216,6 @@ class plotSettings():
     def __init__(self, root, ROW = 0, COL= 0): 
         plotSettingsFrame = tk.LabelFrame(root, text = "Plot settings")
         plotSettingsFrame.grid(row = ROW, 
-                        rowspan = 2,
                         column = COL, 
                         padx = padX, 
                         pady = padY, 
@@ -224,7 +224,7 @@ class plotSettings():
         self.QRVar = tk.IntVar()
         self.QRVar.set(1)
         self.QRCB = self.addTextAndCheckBox(plotSettingsFrame, 
-                                            "QR Rectangles", 
+                                            "Rectangle", 
                                             self.QRVar, 
                                             ROW,
                                             COL)
@@ -248,10 +248,11 @@ class plotSettings():
         self.zToGrid = tk.IntVar()
         self.zToGrid.set(0)
         self.zToGridCB = self.addTextAndCheckBox(plotSettingsFrame, 
-                                            "Zoom to Grid Position", 
+                                            "Zoom to Grid", 
                                             self.zToGrid, 
                                             ROW+3,
                                             COL)
+        self.zToGridCB["state"] = tk.DISABLED
 
 
 
@@ -314,10 +315,12 @@ class plotScreen():
                 open_cv_image = open_cv_image[:, :, ::-1].copy() 
 
                 getQRCorners = QRCalibration()
-                getQRCorners.wMsk = (80,80,80)
+                sliderVal = int(fSettings.mSlider.get())
+                getQRCorners.wMsk = (sliderVal,sliderVal,sliderVal)
                 if(self.cornersFound is False):
                     self.corners = getQRCorners.getCorners(img = open_cv_image)
                     if(getQRCorners.validEntries(self.corners) is True):
+                        pSettings.zToGridCB.configure(state = tk.NORMAL)
                         self.cornersFound = True
                 getQRCorners.getImage(open_cv_image)
                 
@@ -334,9 +337,11 @@ class plotScreen():
                     xPos = 0
                     cWidth = canvasWidth
                     cHeight = canvasHeight
-                    getQRCorners.drawRectangle(getQRCorners.img, self.corners)
-                    img = cv2.cvtColor(getQRCorners.img, cv2.COLOR_BGR2RGB)
+                    img = getQRCorners.img
+                    if(pSettings.QRVar.get() == 1):
+                        getQRCorners.drawRectangle(img, self.corners)
 
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 im_pil = Image.fromarray(img)
 
                         # For reversing the operation:
@@ -357,6 +362,38 @@ class plotScreen():
             time.sleep(1)
     def startServer(self): 
         self.canvasThread.start()
+
+
+class filterSettings():
+    def __init__(self, root, ROW = 0, COL= 0): 
+        filterSettingsFrame = tk.LabelFrame(root, text = "Filter settings")
+        filterSettingsFrame.grid(row = ROW, 
+                        column = COL, 
+                        padx = padX, 
+                        pady = padY, 
+                        sticky = "NESW")
+        self.wMaskVal = tk.StringVar()                
+        label = tk.Label(filterSettingsFrame, text = "Mask:").grid(row = ROW+2, column = COL, padx = padX, pady = padY, sticky = "NESW") 
+        self.mSlider = self.addSlider(filterSettingsFrame, ROW+2, COL+1, 60, 120, self.wMaskVal, 100)
+
+    def addSlider(self, root, ROW, COL,  minVal, maxVal, var, defaultValue = 0): 
+        slider = tk.Scale(root, 
+                          from_ = minVal, 
+                          to = maxVal, 
+                          variable = var,
+                          resolution  = 10,
+                          orient = tk.HORIZONTAL,
+                          length = 120,
+                          )
+
+        slider.set(defaultValue)                          
+        slider.grid(row = ROW, 
+                    column = COL, 
+                    padx = padX, 
+                    pady = padY, 
+                    sticky = "NESW")
+        return slider
+            
 
 class terminalScreen():
     def __init__(self, master, ROW = 0, COL = 0):
@@ -393,6 +430,7 @@ if __name__ == "__main__":
     raspiConnection = RaspberryPIConnection(root)
     HSVsettings(root, 1)
     pSettings = plotSettings(root, 2)
+    fSettings = filterSettings(root,4)
     plotCanvas = plotScreen(root, 0, 1)
     
     root.mainloop()
