@@ -1,3 +1,4 @@
+from calendar import c
 import tkinter as tk 
 from tkinter import ANCHOR, ttk
 from ConnectSSH.connectToSSH import connectToSSH
@@ -214,6 +215,7 @@ class plotSettings():
     def __init__(self, root, ROW = 0, COL= 0): 
         plotSettingsFrame = tk.LabelFrame(root, text = "Plot settings")
         plotSettingsFrame.grid(row = ROW, 
+                        rowspan = 2,
                         column = COL, 
                         padx = padX, 
                         pady = padY, 
@@ -243,6 +245,15 @@ class plotSettings():
                                             ROW+2,
                                             COL)
 
+        self.zToGrid = tk.IntVar()
+        self.zToGrid.set(0)
+        self.zToGridCB = self.addTextAndCheckBox(plotSettingsFrame, 
+                                            "Zoom to Grid Position", 
+                                            self.zToGrid, 
+                                            ROW+3,
+                                            COL)
+
+
 
 
     def addTextAndCheckBox(self, root, txt, var, ROW, COL): 
@@ -262,6 +273,7 @@ class plotSettings():
 class plotScreen():
     def __init__(self, master, ROW = 0, COL = 0):
         self.firstImageEntry = True
+        self.cornersFound = False
 
         plotScreenFrame = tk.LabelFrame(master, text = "Video Feed")
         plotScreenFrame.grid(row = ROW, 
@@ -303,21 +315,38 @@ class plotScreen():
 
                 getQRCorners = QRCalibration()
                 getQRCorners.wMsk = (80,80,80)
-                corners = getQRCorners.getCorners(img = open_cv_image)
-                print(corners)
-
+                if(self.cornersFound is False):
+                    self.corners = getQRCorners.getCorners(img = open_cv_image)
+                    if(getQRCorners.validEntries(self.corners) is True):
+                        self.cornersFound = True
+                getQRCorners.getImage(open_cv_image)
                 
-                img = cv2.cvtColor(getQRCorners.img, cv2.COLOR_BGR2RGB)
+                if(pSettings.zToGrid.get() == 1):
+                    width = self.corners[2,0] - self.corners[0,0]
+
+                    warped = warpImage(getQRCorners.img, width)
+                    warped.warpImage(self.corners)
+                    img = cv2.cvtColor(warped.warpedImage, cv2.COLOR_BGR2RGB)
+                    xPos = (canvasWidth - canvasHeight)/2
+                    cWidth = canvasHeight
+                    cHeight = canvasHeight
+                else: 
+                    xPos = 0
+                    cWidth = canvasWidth
+                    cHeight = canvasHeight
+                    getQRCorners.drawRectangle(getQRCorners.img, self.corners)
+                    img = cv2.cvtColor(getQRCorners.img, cv2.COLOR_BGR2RGB)
+
                 im_pil = Image.fromarray(img)
 
                         # For reversing the operation:
                 im_np = np.asarray(im_pil)
 
-                testImage = ImageTk.PhotoImage(image = im_pil.resize((canvasWidth,canvasHeight)))
+                testImage = ImageTk.PhotoImage(image = im_pil.resize((cWidth,cHeight)))
                     # except: 
                     #     testImage = ImageTk.PhotoImage(image = image.resize((canvasWidth,canvasHeight)))
 
-                self.canvas.create_image(0,0,anchor=tk.NW,image=testImage)
+                self.canvas.create_image(xPos,0,anchor=tk.NW,image=testImage)
 
                 if(self.firstImageEntry == True):
                     raspiConnection.button.configure(state = tk.NORMAL)
@@ -363,7 +392,7 @@ if __name__ == "__main__":
 
     raspiConnection = RaspberryPIConnection(root)
     HSVsettings(root, 1)
-    plotSettings(root, 2)
+    pSettings = plotSettings(root, 2)
     plotCanvas = plotScreen(root, 0, 1)
     
     root.mainloop()
