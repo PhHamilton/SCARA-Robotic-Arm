@@ -2,14 +2,19 @@ import tkinter as tk
 from tkinter import ANCHOR, ttk
 from ConnectSSH.connectToSSH import connectToSSH
 from Server.serverThread import serverClass
+from ColorRecognition.lib.ColorRecognition import detectColor
+from readQRCode.readQR import QRCalibration
+from readQRCode.warpImage import warpImage, QRDistance
 import threading, time
 from PIL import Image, ImageTk
+import cv2
+import numpy as np
 
 # Global defines
 padX = 5
 padY = 5
-canvasWidth = 550
-canvasHeight = 550
+canvasWidth = 648
+canvasHeight = 486
 
 class RaspberryPIConnection():
     def __init__(self, master, ROW = 0, COL = 0):
@@ -78,11 +83,9 @@ class RaspberryPIConnection():
             self.button.configure(text = "Connecting..")
             self.button.configure(state = tk.DISABLED)      
             plotCanvas.canvas.delete("NSC")  
-            plotCanvas.canvas.create_text(550/2, 550/2, text = "Connecting to stream..", font = "Arial")
+            plotCanvas.canvas.create_text(canvasWidth/2, canvasHeight/2, text = "Connecting to stream..", font = "Arial")
             plotCanvas.canvas.update_idletasks()
             self.ssh.connect()
-            # self.button.configure(state = tk.NORMAL)
-            # self.button.configure(text = "Disconnect..")        
 
             self.serverThread.start()
             time.sleep(1)
@@ -91,6 +94,7 @@ class RaspberryPIConnection():
             self.connected = True
         else:
             terminal.update("Disconnecting..")
+            terminal.update("Disconnected from stream")
             self.button.configure(text = "Connect..")
             self.connected = False
         
@@ -288,21 +292,39 @@ class plotScreen():
 
     def updateCanvas(self, server): 
         while(1):
-            try:
-                if(server.newImage == True):
-                    img = server.getImage()
-                    image = Image.open(img)
+            # try:
+            if(server.newImage == True):
+                img = server.getImage()
+                image = Image.open(img)
 
+                open_cv_image = np.array(image) 
+                # Convert RGB to BGR 
+                open_cv_image = open_cv_image[:, :, ::-1].copy() 
 
-                    testImage = ImageTk.PhotoImage(image = image)
-                    self.canvas.create_image(0,0,anchor=tk.NW,image=testImage)
+                getQRCorners = QRCalibration()
+                getQRCorners.wMsk = (80,80,80)
+                corners = getQRCorners.getCorners(img = open_cv_image)
+                print(corners)
 
-                    if(self.firstImageEntry == True):
-                        raspiConnection.button.configure(state = tk.NORMAL)
-                        raspiConnection.button.configure(text = "Disconnect..")
-                        self.firstImageEntry = False
-            except:
-                print("No image available")
+                
+                img = cv2.cvtColor(getQRCorners.img, cv2.COLOR_BGR2RGB)
+                im_pil = Image.fromarray(img)
+
+                        # For reversing the operation:
+                im_np = np.asarray(im_pil)
+
+                testImage = ImageTk.PhotoImage(image = im_pil.resize((canvasWidth,canvasHeight)))
+                    # except: 
+                    #     testImage = ImageTk.PhotoImage(image = image.resize((canvasWidth,canvasHeight)))
+
+                self.canvas.create_image(0,0,anchor=tk.NW,image=testImage)
+
+                if(self.firstImageEntry == True):
+                    raspiConnection.button.configure(state = tk.NORMAL)
+                    raspiConnection.button.configure(text = "Disconnect..")
+                    self.firstImageEntry = False
+            # except:
+            #     print("No image available")
             time.sleep(1)
     def startServer(self): 
         self.canvasThread.start()
