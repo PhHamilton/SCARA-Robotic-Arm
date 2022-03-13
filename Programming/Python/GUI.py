@@ -6,7 +6,8 @@ from ConnectSSH.connectToSSH import connectToSSH
 from Server.serverThread import serverClass
 from ColorRecognition.lib.ColorRecognition import detectColor
 from readQRCode.readQR import QRCalibration
-from readQRCode.warpImage import warpImage, QRDistance
+from readQRCode.warpImage import warpImage, QRDistance, getPoint
+from HSVSettings import HSVsettings
 import threading, time
 from PIL import Image, ImageTk
 import cv2
@@ -60,8 +61,9 @@ class RaspberryPIConnection():
 
 
 
+
         self.ssh = connectToSSH(self.IP, self.hostVal.get(), self.passwordVal.get())
-        self.server = serverClass('192.168.1.143')
+        self.server = serverClass('192.168.1.142')
         self.serverThread = threading.Thread(target = self.server.run)
     
     def updateHostNPWD(self, host, PWD): 
@@ -88,6 +90,7 @@ class RaspberryPIConnection():
             plotCanvas.canvas.create_text(canvasWidth/2, canvasHeight/2, text = "Connecting to stream..", font = "Arial")
             plotCanvas.canvas.update_idletasks()
             self.ssh.connect()
+            terminal.update("Connection established")
 
             self.serverThread.start()
             time.sleep(1)
@@ -138,79 +141,6 @@ class RaspberryPIConnection():
     def updateEntry(self, obj, val): 
         obj.delete(0, "end")
         obj.insert(0, val)
-
-class HSVsettings():
-    def __init__(self, master, ROW = 0, COL = 0): 
-        HSVSettings = tk.LabelFrame(master, text = "HSV Color Settings")
-        HSVSettings.grid(row = ROW, 
-                     column = COL, 
-                     padx = padX, 
-                     pady = padY, 
-                     sticky = "NESW")
-
-        self.CBEntries = ('Red', 'Blue', 'Green')
-        self.CBVar = tk.StringVar()
-
-        
-        self.HVal = None
-        self.SVal = None
-        self.VVal = None
-        self.addComboBox(HSVSettings, 0, 0)
-        sliderFrame = tk.Frame(HSVSettings)
-        sliderFrame.grid(row = ROW+1, 
-                     column = COL, 
-                     columnspan = 2,
-                     padx = padX, 
-                     pady = padY, 
-                     sticky = "NESW")
-        self.addHSVSliders(sliderFrame, 1, 0)
-
-        button = tk.Button(sliderFrame, text = "Save..")
-        button.grid(row = 4, 
-                     column = COL+1, 
-                     padx = padX, 
-                     pady = padY, 
-                     sticky = "NESW")
-
-    def addHSVSliders(self, root, ROW, COL):
-        label = tk.Label(root, text = "H:").grid(row = ROW, column = COL, padx = padX, pady = padY, sticky = "NESW") 
-        self.addSlider(root, ROW, COL+1, 0, 180)
-
-        label = tk.Label(root, text = "S:").grid(row = ROW+1, column = COL, padx = padX, pady = padY, sticky = "NESW") 
-        self.addSlider(root, ROW+1, COL+1, 0, 255)
-
-        label = tk.Label(root, text = "V:").grid(row = ROW+2, column = COL, padx = padX, pady = padY, sticky = "NESW") 
-        self.addSlider(root, ROW+2, COL+1, 0, 255)
-
-    def addSlider(self, root, ROW, COL,  minVal, maxVal, defaultValue = 0): 
-        slider = tk.Scale(root, 
-                          from_ = minVal, 
-                          to = maxVal, 
-                          orient = tk.HORIZONTAL,
-                          length = 120,
-                          )
-
-        slider.set(defaultValue)                          
-        slider.grid(row = ROW, 
-                    column = COL, 
-                    padx = padX, 
-                    pady = padY, 
-                    sticky = "NESW")
-
-        return slider
-
-    def addComboBox(self, root, ROW, COL):
-        cBox = ttk.Combobox(root, 
-                            textvariable = self.CBVar,
-                            values = self.CBEntries,
-                            width = 15,
-                            state = "readonly")
-        cBox.set(self.CBEntries[1])
-        cBox.grid(row = ROW, 
-                  column = COL, 
-                  padx = padX, 
-                  pady = padY, 
-                  sticky = "NESW")
 
 class plotSettings():
     def __init__(self, root, ROW = 0, COL= 0): 
@@ -315,50 +245,113 @@ class plotScreen():
                 open_cv_image = open_cv_image[:, :, ::-1].copy() 
 
                 getQRCorners = QRCalibration()
+                getQRCorners.getImage(open_cv_image) 
                 sliderVal = int(fSettings.mSlider.get())
                 getQRCorners.wMsk = (sliderVal,sliderVal,sliderVal)
+
                 if(self.cornersFound is False):
                     self.corners = getQRCorners.getCorners(img = open_cv_image)
                     if(getQRCorners.validEntries(self.corners) is True):
                         pSettings.zToGridCB.configure(state = tk.NORMAL)
+                        width = self.corners[2,0] - self.corners[0,0]
                         self.cornersFound = True
-                getQRCorners.getImage(open_cv_image)
-                
-                if(pSettings.zToGrid.get() == 1):
-                    width = self.corners[2,0] - self.corners[0,0]
-
-                    warped = warpImage(getQRCorners.img, width)
-                    warped.warpImage(self.corners)
-                    img = cv2.cvtColor(warped.warpedImage, cv2.COLOR_BGR2RGB)
-                    xPos = (canvasWidth - canvasHeight)/2
-                    cWidth = canvasHeight
-                    cHeight = canvasHeight
+                        terminal.update("QR corners found, zoom option is now available")
                 else: 
-                    xPos = 0
-                    cWidth = canvasWidth
-                    cHeight = canvasHeight
-                    img = getQRCorners.img
-                    if(pSettings.QRVar.get() == 1):
-                        getQRCorners.drawRectangle(img, self.corners)
+                    # Check for colors: 
+                    fColor = detectColor(None)
+                    # Set kernel (Always the same value independent of viewing mode)
+                    fColor.setKernel(10)
+                    warped = warpImage(open_cv_image, width)
+                    # Warp the image to get accurate position of the objects
+                    warped.warpImage(self.corners)
+                    # Do object decetion on the warped image
+                    fColor.img = warped.warpedImage
+                    # Check the lower and upper bound
 
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                im_pil = Image.fromarray(img)
+                    fColor.setLowerBound(int(hsv_settings.HL.get()),int(hsv_settings.SL.get()),int(hsv_settings.VL.get()))
+                    fColor.setUpperBound(int(hsv_settings.HH.get()),int(hsv_settings.SH.get()),int(hsv_settings.VH.get()))
+                    # Find objects in the image
+                    fColor.findColor()
+                    x,y = fColor.getCoordinates()
+                    # Removes the points outside the rectangle
+                    if x:                        
+                        x_filtered = [ elements for elements in x if elements > self.corners[0,0] and elements < self.corners[2,0]]
+                        y_filtered = [ elements for elements in y if elements > self.corners[0,1] and elements < self.corners[2,1]]
 
-                        # For reversing the operation:
-                im_np = np.asarray(im_pil)
+                        # Store the x,y position in mm 
+                        xMM = []
+                        yMM = []
+                        for i in range(len(x_filtered)):
+                            try: # Solves a bug that get x_filtered out of range
+                                x_converted, y_converted = getPoint(x_filtered[i], y_filtered[i], width)
+                                xMM.append(x_converted)
+                                yMM.append(y_converted)
+                            except: 
+                                pass    
+                    else: 
+                        # If the values does not exist, keep the filtered values empty
+                        x_filtered = x
+                        y_filtered = y
 
-                testImage = ImageTk.PhotoImage(image = im_pil.resize((cWidth,cHeight)))
-                    # except: 
-                    #     testImage = ImageTk.PhotoImage(image = image.resize((canvasWidth,canvasHeight)))
+                    if(pSettings.zToGrid.get() == 1):
+                        # If we are zoomed in
+                        img = warped.warpedImage
+                        # Draw cross and the corresponding position if a point exist
+                        if(len(x_filtered) > 0):
+                            for i in range(len(xMM)):
+                                txt = "({:.1f}, {:.1f})".format(xMM[i], yMM[i])
+                                fColor.drawCross(img, x_filtered[i], y_filtered[i], (255,0,0), 20, txt)
 
-                self.canvas.create_image(xPos,0,anchor=tk.NW,image=testImage)
+                        # Configure settings for plot
+                        xPos = (canvasWidth - canvasHeight)/2
+                        cWidth = canvasHeight
+                        cHeight = canvasHeight
 
-                if(self.firstImageEntry == True):
-                    raspiConnection.button.configure(state = tk.NORMAL)
-                    raspiConnection.button.configure(text = "Disconnect..")
-                    self.firstImageEntry = False
-            # except:
-            #     print("No image available")
+                    else:
+                        # If we are zoomed out 
+                        img = open_cv_image
+                        # We need to detect the colors again
+                        fColor.img = img
+                        # This might cause an error if the points are discovered in another order
+                        fColor.findColor()
+                        x,y = fColor.getCoordinates()
+                        # Removes the points outside the rectangle
+                        if x:
+                            x_filtered = [ elements for elements in x if elements > self.corners[0,0] and elements < self.corners[2,0]]
+                            y_filtered = [ elements for elements in y if elements > self.corners[0,1] and elements < self.corners[2,1]]
+                        else: 
+                            x_filtered = x
+                            y_filtered = y
+
+                        if(len(x_filtered) > 0):
+                            for i in range(len(xMM)):
+                                try:
+                                    txt = "({:.1f}, {:.1f})".format(xMM[i], yMM[i])
+                                    fColor.drawCross(fColor.img, x_filtered[i], y_filtered[i], (255,0,0), 20, txt)
+                                except:
+                                    print("Did not find the correct location")
+                        # Configure settings for plot 
+                        xPos = 0
+                        cWidth = canvasWidth
+                        cHeight = canvasHeight
+                        img = getQRCorners.img
+                        if(pSettings.QRVar.get() == 1):
+                            getQRCorners.drawRectangle(img, self.corners)
+
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+                    # Convert image for drawing it in the Canvas
+                    im_pil = Image.fromarray(img)
+
+                    testImage = ImageTk.PhotoImage(image = im_pil.resize((cWidth,cHeight)))
+
+                    self.canvas.create_image(xPos,0,anchor=tk.NW,image=testImage)
+
+                    if(self.firstImageEntry == True):
+                        raspiConnection.button.configure(state = tk.NORMAL)
+                        raspiConnection.button.configure(text = "Disconnect..")
+                        self.firstImageEntry = False
+
             time.sleep(1)
     def startServer(self): 
         self.canvasThread.start()
@@ -374,14 +367,14 @@ class filterSettings():
                         sticky = "NESW")
         self.wMaskVal = tk.StringVar()                
         label = tk.Label(filterSettingsFrame, text = "Mask:").grid(row = ROW+2, column = COL, padx = padX, pady = padY, sticky = "NESW") 
-        self.mSlider = self.addSlider(filterSettingsFrame, ROW+2, COL+1, 60, 120, self.wMaskVal, 100)
+        self.mSlider = self.addSlider(filterSettingsFrame, ROW+2, COL+1, 100, 120, self.wMaskVal, 100)
 
     def addSlider(self, root, ROW, COL,  minVal, maxVal, var, defaultValue = 0): 
         slider = tk.Scale(root, 
                           from_ = minVal, 
                           to = maxVal, 
                           variable = var,
-                          resolution  = 10,
+                          resolution  = 1,
                           orient = tk.HORIZONTAL,
                           length = 120,
                           )
@@ -404,7 +397,7 @@ class terminalScreen():
                             pady = padY, 
                             sticky = "NESW")
 
-        self.textField = tk.Text(terminalFrame, height = 5)
+        self.textField = tk.Text(terminalFrame, height = 5, width = 92)
         self.textField.grid(row = ROW, 
                             column = COL, 
                             padx = padX, 
@@ -426,12 +419,14 @@ if __name__ == "__main__":
 
     # Console added first to be able to access it from the other classes
     terminal = terminalScreen(root,4,1)
-
-    raspiConnection = RaspberryPIConnection(root)
-    HSVsettings(root, 1)
+    hsv_settings = HSVsettings(root, 1)
     pSettings = plotSettings(root, 2)
     fSettings = filterSettings(root,4)
+
+    raspiConnection = RaspberryPIConnection(root)
+    
     plotCanvas = plotScreen(root, 0, 1)
+    
     
     root.mainloop()
 
