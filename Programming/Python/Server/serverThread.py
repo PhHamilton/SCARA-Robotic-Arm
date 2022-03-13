@@ -14,7 +14,7 @@ import tkinter as tk
 class serverClass():
     def __init__(self, IP, SOCKET = 8000): 
         self.server_socket = socket.socket()
-        self.server_socket.bind((IP, SOCKET)) 
+        self.server_socket.bind((IP, SOCKET))  # ADD IP HERE
         
         self.startServer = True
         self.firstEntry = True
@@ -64,3 +64,22 @@ def updateCanvas(canvas):
         except:
             print("No image available")
         time.sleep(1)
+        
+if __name__ == '__main__':
+    IP = '192.168.1.143'
+
+    server = serverClass(IP)
+
+    thread = threading.Thread(target = server.run)
+    thread.start()
+
+    thread2 = threading.Thread(target = updateCanvas)
+
+    root = tk.Tk()
+    root.geometry("800x800")
+    canvas = tk.Canvas(root, width = 648, height = 800)
+    canvas.grid(row = 0, column = 0, sticky = "NESW")
+
+
+    thread2.start()
+    root.mainloop()
