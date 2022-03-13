@@ -14,7 +14,7 @@ import tkinter as tk
 class serverClass():
     def __init__(self, IP, SOCKET = 8000): 
         self.server_socket = socket.socket()
-        self.server_socket.bind((IP, 8000))  # ADD IP HERE
+        self.server_socket.bind((IP, SOCKET)) 
         
         self.startServer = True
         self.firstEntry = True
@@ -43,23 +43,6 @@ class serverClass():
                 self.image = image_stream
 
                 self.newImage = True
-
-
-                # self.image = Image.open(image_stream)
-                # self.image.show()
-
-                # self.cv2Image = np.array(image) 
-                # # Convert RGB to BGR 
-                # self.cv2Image = self.cv2Image[:, :, ::-1].copy() 
-        
-                # # cv2.imshow("Image", cv2Image)
-                # # cv2.waitKey(500)
-
-
-                # print('Image is %dx%d' % self.image.size)
-                # self.image.verify()
-
-                # print('Image is verified')
         
             self.connection.close()
             self.server_socket.close()
@@ -78,29 +61,6 @@ def updateCanvas(canvas):
                 image = Image.open(img)
                 testImage = ImageTk.PhotoImage(image = image.resize((600,600)))
                 canvas.create_image(0,0,anchor=tk.NW,image=testImage)
-                # canvas.create_image(img = ImageTk.PhotoImage(Image.open(img)))
-                # print(img)
-            
-            # img = ImageTk.PhotoImage(server.image)
-            # canvas.create_image(image = img)
         except:
             print("No image available")
         time.sleep(1)
-if __name__ == '__main__':
-    IP = '192.168.1.143'
-
-    server = serverClass(IP)
-
-    thread = threading.Thread(target = server.run)
-    thread.start()
-
-    thread2 = threading.Thread(target = updateCanvas)
-
-    root = tk.Tk()
-    root.geometry("800x800")
-    canvas = tk.Canvas(root, width = 648, height = 800)
-    canvas.grid(row = 0, column = 0, sticky = "NESW")
-
-
-    thread2.start()
-    root.mainloop()
