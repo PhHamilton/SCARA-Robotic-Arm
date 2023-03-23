@@ -15,14 +15,17 @@ class HSVsettings():
                    pady = padY,
                    sticky = "NESW")
 
-        self.HLVar = tk.IntVar()
-        self.HHVar = tk.IntVar()
+        self.HLVar = tk.StringVar()
+        self.HHVar = tk.StringVar()
 
-        self.SLVar = tk.IntVar()
-        self.SHVar = tk.IntVar()
 
-        self.VLVar = tk.IntVar()
-        self.VHVar = tk.IntVar()    
+        self.SLVar = tk.StringVar()
+        self.SHVar = tk.StringVar()
+
+
+        self.VLVar = tk.StringVar()
+        self.VHVar = tk.StringVar()    
+
 
         self.rows = None
         
@@ -73,7 +76,14 @@ class HSVsettings():
         self.VH = self.createEntry(frame, self.VHVar, ROW +3, COL+2)
 
 
-        loadButton = tk.Button(frame, text = "Load..", command = self.loadData)
+        self.CBEntries = ('Red', 'Green', 'Blue', 'Yellow', 'Orange', 'Purple')
+        self.CBVar = tk.StringVar()
+        self.CBVar.trace('w', self.comboboxUpdated)
+
+        self.CBVar.set(self.CBEntries[0])
+        self.addComboBox(frame, ROW, 0)
+        self.loadData()
+        loadButton = tk.Button(frame, text = "Update..", command = self.updateCboxValues)
         loadButton.grid(row = ROW + 4,
                    column = COL, 
                    columnspan = 3,
@@ -81,13 +91,24 @@ class HSVsettings():
                    pady = padY,
                    sticky = "NESW")
 
-        self.CBEntries = ('Red', 'Green', 'Blue', 'Yellow', 'Orange', 'Purple')
-        self.CBVar = tk.StringVar()
-        self.CBVar.trace('w', self.comboboxUpdated)
 
-        self.CBVar.set(self.CBEntries[0])
-        self.addComboBox(frame, ROW, 0)
+    def getLowerBoundValues(self):
+        if self.HLVar.get() == "": 
+            self.HLVar.set(0)
+        if self.VLVar.get() == "": 
+            self.VLVar.set(0)
+        if self.VLVar.get() == "": 
+            self.VLVar.set(0)
 
+        return int(self.HLVar.get()), int(self.SLVar.get()), int(self.VLVar.get())
+    def getUpperBoundValues(self):
+        if self.HHVar.get() == "": 
+            self.HLHVar.set(0)
+        if self.VLVar.get() == "": 
+            self.VHVar.set(0)
+        if self.VHVar.get() == "": 
+            self.VHVar.set(0)
+        return int(self.HHVar.get()), int(self.SHVar.get()), int(self.VHVar.get())
 
     def comboboxUpdated(self, index, value, op):
         idx = self.CBEntries.index(self.CBVar.get())
@@ -123,7 +144,7 @@ class HSVsettings():
         with open(localPath, 'r') as f: 
             self.rows = f.read().splitlines()
         f.close()
-        print(self.rows)
+
         self.comboboxUpdated(0,0,0) #MIGHT CAUSE AN ISSUE! UNKNOWN EFFECT OF INPUT VALUES!
 
 
@@ -153,5 +174,6 @@ class HSVsettings():
 
 if __name__ == '__main__':
     root = tk.Tk()
-    HSVsettings(root,0,0)
+    a = HSVsettings(root,0,0)
+    print(a.getUpperBoundValues())
     root.mainloop()

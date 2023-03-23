@@ -267,9 +267,10 @@ class plotScreen():
                     # Do object decetion on the warped image
                     fColor.img = warped.warpedImage
                     # Check the lower and upper bound
-
-                    fColor.setLowerBound(int(hsv_settings.HL.get()),int(hsv_settings.SL.get()),int(hsv_settings.VL.get()))
-                    fColor.setUpperBound(int(hsv_settings.HH.get()),int(hsv_settings.SH.get()),int(hsv_settings.VH.get()))
+                    HL, SL, VL = hsv_settings.getLowerBoundValues()
+                    HH, SH, VH = hsv_settings.getUpperBoundValues()
+                    fColor.setLowerBound(HL, SL, VL)
+                    fColor.setUpperBound(HH, SH, VH)
                     # Find objects in the image
                     fColor.findColor()
                     x,y = fColor.getCoordinates()

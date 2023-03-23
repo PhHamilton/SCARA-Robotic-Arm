@@ -60,7 +60,7 @@ class detectColor():
                 continue
             xList.append(int(M['m10']/M['m00']))
             yList.append(int(M['m01']/M['m00']))
-                
+            
         return xList, yList
 
 
