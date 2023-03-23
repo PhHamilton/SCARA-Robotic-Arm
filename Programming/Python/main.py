@@ -62,14 +62,17 @@ if __name__ == "__main__":
 
 # Find the colors in the fixed frame to determine their position
     colorDetection = detectColor(warped.warpedImage)
-    x, y = findColor(colorDetection, warped.warpedImage, "Blue")
+    x, y = findColor(colorDetection, warped.warpedImage, "Yellow")
 
     xMM, yMM = getPoint(x, y, width)
-    txt = "({:.1f}, {:.1f})".format(xMM, yMM)
-
+    print(xMM, yMM)
+    
+    txt = list(map("({:.1f}, {:.1f})".format, xMM, yMM))
+    
     colorDetection2 = detectColor(test.img)
-    x2,y2 = findColor(colorDetection2, test.img, "Blue")
-    colorDetection2.drawCross(test.img, x2, y2, (255,255,255), 20, txt)
+    x2,y2 = findColor(colorDetection2, test.img, "Orange")
+    print(x2,y2)
+    colorDetection2.drawCross(test.img, x2[0], y2[0], (255,255,255), 20, str(txt[0]))
     test.showImage()
 
 

@@ -3,6 +3,7 @@ from pyzbar.pyzbar import decode
 
 import numpy as np
 import cv2 
+from PIL import Image
 
 class QRCalibration():
     def __init__(self):
@@ -15,9 +16,9 @@ class QRCalibration():
 
     def getImage(self, img, path = None):
         if path is not None: 
-            self.img = cv2.imread(path)
+            self.img = cv2.imread(path, mode = "RGB")
         else: 
-            self.img = img
+            self.img = cv2.imread(img)
 
     def getCorners(self, img, path = None, DEBUG = False): 
         self.getImage(img, path)

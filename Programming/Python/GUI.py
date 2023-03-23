@@ -417,7 +417,7 @@ class terminalScreen():
 
 if __name__ == "__main__": 
     root = tk.Tk()
-
+    root.title("Color Recognizer")
     # Console added first to be able to access it from the other classes
     terminal = terminalScreen(root,4,1)
     hsv_settings = HSVsettings(root, 1)

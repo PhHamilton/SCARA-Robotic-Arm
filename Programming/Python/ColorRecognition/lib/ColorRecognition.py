@@ -65,10 +65,10 @@ class detectColor():
 
 
     def drawCross(self, img, x, y, cross_color, line_length, text = None): 
-            cv2.line(img, (x-line_length, y), (x+line_length, y), cross_color, 5)
-            cv2.line(img, (x, y-line_length), (x, y+line_length), cross_color, 5)
-            if(text != None): 
-                cv2.putText(img, text, (x + 20, y+80), cv2.FONT_HERSHEY_COMPLEX, 2, (255,255,255), 2)
+        cv2.line(img, (x-line_length, y), (x+line_length, y), cross_color, 5)
+        cv2.line(img, (x, y-line_length), (x, y+line_length), cross_color, 5)
+        if(text != None): 
+            cv2.putText(img, text, (x + 20, y+80), cv2.FONT_HERSHEY_COMPLEX, 2, (255,255,255), 2)
 
     def erodeImage(self):
         return cv2.erode(self.msk, self.kernel, iterations = 2)
